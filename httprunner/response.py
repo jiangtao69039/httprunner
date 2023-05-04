@@ -167,13 +167,23 @@ class ResponseObject(object):
 
         return check_value
 
-    def extract(self, extractors: Dict[Text, Text]) -> Dict[Text, Any]:
+    def extract(self,
+                extractors: Dict[Text, Text],
+                variables_mapping: VariablesMapping = None,
+                functions_mapping: FunctionsMapping = None) -> Dict[Text, Any]:
         if not extractors:
             return {}
 
         extract_mapping = {}
         for key, field in extractors.items():
-            field_value = self._search_jmespath(field)
+            check_item = field
+            if "$" in check_item:
+                # check_item is variable or function
+                check_item = parse_data(
+                    check_item, variables_mapping, functions_mapping
+                )
+                check_item = parse_string_value(check_item)
+            field_value = self._search_jmespath(check_item)
             extract_mapping[key] = field_value
 
         logger.info(f"extract mapping: {extract_mapping}")
